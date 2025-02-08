@@ -1,4 +1,3 @@
 # 只备份代码的部分
-
-.
-!code/
+data_orig/
+data_ave-64/

@@ -39,6 +39,7 @@ from scipy import ndimage
 import gc
 import sys
 from natsort import natsorted
+from scipy.signal import medfilt
 
 
 
@@ -369,14 +370,14 @@ class Scan:
         self.nscan = len(scanPts)
         
         for i in range(self.nscan):#self.nscan
-            print(self.ObsTime[0],scanPts[i][0],scanPts[i][1],self.ObsTime[-1])
+            # print(self.ObsTime[0],scanPts[i][0],scanPts[i][1],self.ObsTime[-1])
             # print("scanPts[i][0]:",scanPts[i][1]-self.ObsTime[])
             sel1 = self.ObsTime >= scanPts[i][0]
             sel2 = self.ObsTime <= scanPts[i][1]
             sel = sel1 & sel2
 
-            print("sel1:",self.ObsData[sel1])
-            print("sel2:",self.ObsData[sel2])
+            # print("sel1:",self.ObsData[sel1])
+            # print("sel2:",self.ObsData[sel2])
             #print("sel:",sel)
             # print("self.ObsData:",self.ObsData[sel])
             a=0
@@ -488,7 +489,7 @@ class Scan:
             U_ref = ref_all[2]*1.
             V_ref = ref_all[3]*1.
             scale_IQ = Q_ref / I_ref 
-            print(f"Q_ref:{Q_ref}", f"I_ref:{I_ref}")
+            # print(f"Q_ref:{Q_ref}", f"I_ref:{I_ref}")
             ang_inst = np.arctan2(V_ref, U_ref) 
         
             I_ref_c = (I_ref - scale_IQ * Q_ref) / (1 - scale_IQ*scale_IQ)
@@ -752,7 +753,7 @@ def makeCalScan(posFile, scan_pts_file, infTemplate, fileList, BeamList, RA_c, D
         print(good_chan_file)
         chan_all = np.loadtxt(good_chan_file, dtype=int)
         # 如果该索引的平均值小于0.5，说明该索引通道是好通道
-        good_chans = np.where(chan_all.mean(axis=0) < 0.5)[0]
+        good_chans = np.where(chan_all.mean(axis=0) > 0.6)[0]
         
     print(ChanList)
 
@@ -761,10 +762,11 @@ def makeCalScan(posFile, scan_pts_file, infTemplate, fileList, BeamList, RA_c, D
         if good_chan_file != None:
             # 如果Chan在good_chans中，说明是好通道
             if Chan in good_chans: 
-                print(f"++++++ Good chans!+++++++++++")
+                print(f"++++++ Bad chans {Chan} +++++++++++")
+                continue
 
         for i in BeamList:
-            print("Beam: ",i)
+            print(f"Channel: {Chan} Beam: {i}")
             BeamNr = "M%02d" % i
 
             inf = infTemplate.replace('YYY', BeamNr[1:])
@@ -788,7 +790,7 @@ def makeCalScan(posFile, scan_pts_file, infTemplate, fileList, BeamList, RA_c, D
             # sys.exit()
             print(f'f_I: {f_I}')
             print(f'outFileBase: {outFileBase}')
-            outfile = outFileBase +str(Nchan_N)+'.cal.dat'
+            outfile = outFileBase
             print(f'outfile {outfile}')
             fout = open(outfile, 'a+')
             ss = str(i)+" "+str(Chan)+" "+str(f_I)+" "+str(f_Q)+" "+str(f_U)+" "+str(ti)+" "+str(q)+" "+str(u)+" "+str(v)+" "+str(pi)+" "+str(pa)+" "+str(pc)+" "+str(obs.fghz)+"\n"
@@ -796,18 +798,73 @@ def makeCalScan(posFile, scan_pts_file, infTemplate, fileList, BeamList, RA_c, D
             fout.close()
 
 
+def obtain_gainratio(file_in, file_out, plot=True):
+
+
+    Ncol = 13
+    data1 = np.loadtxt(file_in)#, sep='\n')
+    print(f'orignal data shape {data1.shape}')
+
+    freq = data1[:,-1][::19]
+    print(freq[1])
+
+    print(f'freq data shape {freq.shape}')
+    gain1 = 1./data1[:,2]
+    print(f'gain1 data shape {gain1.shape}')
+    N_beams = 19
+
+    ouf = open(file_out, 'w')
+    ouf.write('1, 0\n')
+
+    y0 = gain1[0::19]
+    print(f'y0 shape {y0.shape}')
+
+    fig = plt.figure(figsize = (10,10))
+
+
+    for beam in range(1, N_beams):
+        beam_name = beam+1
+        y1 = gain1[beam::19]
+        # y = y0 / y1 
+        y = y1 / y0 
+        
+
+        p = models.Polynomial1D(1)
+        pfit = fitting.LinearLSQFitter()
+
+        
+        model = pfit(p, freq, y)
+        yf = model(freq)
+        ss = '%.2f, %.2f' % (model.c0.value, model.c1.value)
+        ouf.write(ss+'\n')
+
+        ymedfit = medfilt(y, kernel_size= 99)
+
+        ax = fig.add_subplot(6,3,beam)
+        ax.plot(freq, y, '.', color = 'lightblue')
+        ax.plot(freq, yf, label = f'{ss}')
+        ax.plot(freq, ymedfit, color = 'magenta', alpha = 0.5, label = 'medfit')
+        ax.set_title(f'Beam {beam_name}')
+        ax.set_xlabel('Frequency (GHz)')
+        ax.set_ylabel(r'$G_{B}/G_{B1}$')
+        plt.tight_layout()
+        plt.legend()
+        plt.savefig(f"{file_out}.png", dpi=100)
+
+
 def main():
 
     posFile = f"../data_ave-64/3C138_20241207/3C138_2024_12_07_02_27.csv"
     infTemplate = f"../data_ave-64/3C138_20241207/3C138_multibeamcalibration-MYYY_ave-64.fits"
     scan_pts_file = f"../data_ave-64/3C138_20241207/3C138_2024_12_07_02_27_scan_pts.dat"
-    outFileBase = "../data_ave-64/3C138_20241207/gain_ratio"
+    outFileBase = "../data_ave-64/3C138_20241207/cat.dat"
+    file_gainratio = f"../data_ave-64/3C138_20241207/gain_ratio.dat"
     source = "3C138"
     c0 = SkyCoord.from_name(source)
     RA_c, Dec_c = c0.ra.deg, c0.dec.deg
     BeamList = range(1,20)
 
-    ChanList = np.arange(0, 1024, 1)
+    ChanList = np.arange(0,1023)
     signQ = -1.
     signU = 1.
 
@@ -816,18 +873,13 @@ def main():
     good_chan_file = f"../data_ave-64/3C138_20241207/good_chans.txt"
     ang = 0. 
     check = False
-    Nchan_N = 1
     fileList=[0,1]
+    Nchan_N =1
+    if os.path.exists(outFileBase): os.remove(outFileBase)
 
     makeCalScan(posFile, scan_pts_file, infTemplate, fileList, BeamList, RA_c, Dec_c, source, good_chan_file = good_chan_file, tcalFile=tcalFile, RotAngle=Angle(ang*u.deg), ChanList=ChanList, signQ=signQ, signU=signU, check=check, outFileBase=outFileBase, Nchan_N=Nchan_N)
 
+    obtain_gainratio(outFileBase, file_gainratio, plot=True)
+
 if __name__ == "__main__":
     main()
-
-# %%
-
-import pandas as pd
-
-df = pd.read_csv("../data_ave-64/3C138_20241207/3C138_2024_12_07_02_27.csv")
-print(df.shape)
-# %%
