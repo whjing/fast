@@ -1,0 +1,7 @@
+Number of files: 2
+Reading file: ../data_orig/3C138/20241210/3C138_multibeamcalibration-M08_W_0001.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/3C138/20241210/3C138_multibeamcalibration-M08_W_0002.fits
+Now the shape is (1848, 1024, 4)
+After combining: obs (3896, 1024, 4), time (3896,)
+File saved: ../data_ave-64/3C138_20241210/3C138_multibeamcalibration-M08_ave-64.fits

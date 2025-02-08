@@ -1,0 +1,19 @@
+Number of files: 8
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0001.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0002.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0003.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0004.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0005.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0006.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0007.fits
+Now the shape is (2048, 1024, 4)
+Reading file: ../data_orig/G159+7_6/20241201/G159+7_6_MultiBeamOTF-M10_W_0008.fits
+Now the shape is (777, 1024, 4)
+After combining: obs (15113, 1024, 4), time (15113,)
+File saved: ../data_ave-64/G159+7_6_20241201/G159+7_6_MultiBeamOTF-M10_ave-64.fits
